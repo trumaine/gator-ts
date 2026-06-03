@@ -1,7 +1,8 @@
 import { getNextFeedToFetch, markFeedFetched } from "src/lib/db/queries/feeds";
 import { fetchFeed } from "../lib/rss";
-import { Feed } from "src/lib/db/schema";
+import { Feed, NewPost } from "src/lib/db/schema";
 import { parseDuration } from "src/lib/time";
+import { createPost } from "src/lib/db/queries/posts";
 
 export async function handlerAgg(cmdName: string, ...args: string[]) {
   if (args.length !== 1) {
@@ -12,7 +13,7 @@ export async function handlerAgg(cmdName: string, ...args: string[]) {
   const timeBetweenRequests = parseDuration(timeArg);
   if (!timeBetweenRequests) {
     throw new Error(
-      `invalid duration: ${timeArg} - use format 1h, 30m, 15s, or 3500ms`,
+      `invalid duration: ${timeArg} - use format <1h>, <30m>, <15s> or <3500ms>`,
     );
   }
 
@@ -50,7 +51,19 @@ async function scrapeFeed(feed: Feed) {
   await markFeedFetched(feed.id);
 
   for (const item of feedData.channel.item) {
-    console.log(` * ${item.title}`);
+    console.log(`Found post: %s`, item.title);
+
+    const now = new Date();
+    
+    await createPost({
+      url: item.link,
+      feedId: feed.id,
+      title: item.title,
+      createdAt: now,
+      updatedAt: now,
+      description: item.description,
+      publishedAt: new Date(item.pubDate),
+    } satisfies NewPost);
   }
 
   console.log(

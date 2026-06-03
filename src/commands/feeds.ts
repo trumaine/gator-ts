@@ -51,6 +51,6 @@ export async function handlerListFeeds(_: string): Promise<void> {
         }
 
         printFeed(feed, user);
-        console.log(`=====================================`);
+        console.log("=====================================");
     }
 }
